@@ -1,18 +1,17 @@
 import logging
-import sys
-import config as cfg
 from datetime import datetime
-
-from sklearn.model_selection import train_test_split
-from sklearn.datasets import load_digits
 
 import xgboost as xgb
 import catboost as cb
 import lightgbm as lgb
+from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB as GNB
-from sklearn.ensemble import RandomForestClassifier as RFC
+from sklearn.ensemble import (StackingClassifier as STC,
+                              RandomForestClassifier as RFC)
 from sklearn.tree import DecisionTreeClassifier as DTC
-from sklearn.ensemble import StackingClassifier
+from sklearn.datasets import load_digits
+
+import config as cfg
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -54,7 +53,7 @@ estimators = [
 final_estimator = RFC(**cfg.RF_PARAMS)
 
 ## Stacking model
-clf = StackingClassifier(estimators=estimators, final_estimator=final_estimator, **cfg.STACKING_PARAMS)
+clf = STC(estimators=estimators, final_estimator=final_estimator, **cfg.STACKING_PARAMS)
 
 
 # Train
