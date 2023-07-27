@@ -10,14 +10,14 @@ LGB_PARAMS = {
     'device_type': 'cpu',
     'n_jobs':  -1,
     
-    'num_class': 10,
     'boosting_type': 'gbdt',
-    'objective': 'softmax',
-    'num_leaves': 127,
+    'objective': 'binary',
     'force_col_wise': True,
     'learning_rate': 0.05,
     'colsample_bytree': 0.8,
     'subsample': 0.8,
+    'n_estimators': 2000,
+    'early_stopping_round': 100,
 }
 
 XGB_PARAMS = {
@@ -40,14 +40,14 @@ XGB_PARAMS = {
 CB_PARAMS = {
     'random_state': RANDOM_STATE,
     'thread_count': -1,
-    'verbose': True,
+    'verbose': 10,
     
     # CatBoostClassifier will automatically detect the number of classes in multiclass classification
-    'iterations': 20000,
-    'early_stopping_rounds': 100,
+    'iterations': 2000,
+    'early_stopping_rounds': 50,
     'learning_rate': 0.1,
     'depth': 7,
-    'loss_function': 'MultiClass',
+    'loss_function': 'Logloss',
     'l2_leaf_reg': 30,
     'bootstrap_type': 'Bernoulli',
     'subsample': 0.8,

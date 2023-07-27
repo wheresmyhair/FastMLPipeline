@@ -1,3 +1,4 @@
+import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
 from sklearn.linear_model import LogisticRegression
@@ -8,6 +9,7 @@ from sklearn.ensemble import GradientBoostingClassifier
 from sklearn import datasets
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
 
 
 class MyStacking:
@@ -80,13 +82,71 @@ import config as cfg
 import catboost as cb
 import lightgbm as lgb
 
+
+df_raw = pd.read_csv('./data/mock/train.csv')
+df_test = pd.read_csv('./data/mock/test.csv')
+df_raw.drop(['id','issueDate','postCode','earliesCreditLine'], axis=1, inplace=True)
+df_test.drop(['id','issueDate','postCode','earliesCreditLine'], axis=1, inplace=True)
+col_cate = [
+    'grade',
+    'subGrade',
+    'homeOwnership',
+    'employmentTitle',
+    'verificationStatus',
+    'purpose',
+    'regionCode',
+    'initialListStatus',
+    'applicationType',
+    'title',
+    'policyCode',
+    'employmentLength'
+]
+for col in df_raw.columns:
+    df_raw[col].fillna(df_raw[col].mode()[0], inplace=True)
+    df_test[col].fillna(df_test[col].mode()[0], inplace=True)
+    if col in col_cate:
+        df_raw[col] = df_raw[col].astype('str').astype('category')
+        df_test[col] = df_test[col].astype('str').astype('category')
+df_raw_x = df_raw.drop(['isDefault'], axis=1)
+df_raw_y = df_raw['isDefault']
+
+
 skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=2023)
-
-clf_cb = cb.CatBoostClassifier(**cfg.CB_PARAMS)
-clf_cb.fit(X_train, y_train, eval_set=(X_test, y_test), verbose=100, early_stopping_rounds=100)
+clf_cb = cb.CatBoostClassifier(cat_features=col_cate, **cfg.CB_PARAMS)
 clf_lgb = lgb.LGBMClassifier(**cfg.LGB_PARAMS)
+estimators = [clf_lgb]
 
+
+df_intermediate_train = np.zeros((df_raw.shape[0], len(estimators)))
+df_intermediate_test = np.zeros((df_test.shape[0], len(estimators)))
+
+
+for idx_skf, (idx_train, idx_val) in enumerate(skf.split(df_raw_x, df_raw_y)):
+    df_train_x = df_raw_x.loc[idx_train]
+    df_train_y = df_raw_y[idx_train]
+    df_val_x = df_raw_x.loc[idx_val]
+    df_val_y = df_raw_y[idx_val]
+
+    for idx_model, model in enumerate(estimators):
+        model_fitted = model.fit(X=df_train_x, y=df_train_y,
+                                 eval_set=(df_val_x, df_val_y))
+        
+        df_intermediate_train[idx_val, idx_model] = model_fitted.predict_proba(df_val_x)[:,1]
+        df_intermediate_test[:, idx_model] += model_fitted.predict_proba(df_test)[:,1] / skf.n_splits
+    
+    
+    # model_cb = clf_cb.fit(X=df_train_x, y=df_train_y,
+    #                       eval_set=(df_val_x, df_val_y))
+    
+    
+    # classification_report(df_val_y, model_lgb.predict(df_val_x))
+    
+
+
+    
 dataset_train = np.zeros((X.shape[0], len(self.estimators)))
+
+
 for i, model in enumerate(self.estimators):
     for (train, val) in kf.split(X, y):
         X_train = X[train]
