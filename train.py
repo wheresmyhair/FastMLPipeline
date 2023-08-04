@@ -80,11 +80,13 @@ if __name__ == '__main__':
 # test module
 import config as cfg
 import catboost as cb
+import xgboost as xgb
 import lightgbm as lgb
 
 
-df_raw = pd.read_csv('./data/mock/train.csv')
-df_test = pd.read_csv('./data/mock/test.csv')
+root_path = '../_data/tianchi-loandefaulter'
+df_raw = pd.read_csv(f'{root_path}/train.csv')
+df_test = pd.read_csv(f'{root_path}/test.csv')
 df_raw.drop(['id','issueDate','postCode','earliesCreditLine'], axis=1, inplace=True)
 df_test.drop(['id','issueDate','postCode','earliesCreditLine'], axis=1, inplace=True)
 col_cate = [
@@ -101,7 +103,7 @@ col_cate = [
     'policyCode',
     'employmentLength'
 ]
-for col in df_raw.columns:
+for col in df_test.columns:
     df_raw[col].fillna(df_raw[col].mode()[0], inplace=True)
     df_test[col].fillna(df_test[col].mode()[0], inplace=True)
     if col in col_cate:
@@ -114,7 +116,8 @@ df_raw_y = df_raw['isDefault']
 skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=2023)
 clf_cb = cb.CatBoostClassifier(cat_features=col_cate, **cfg.CB_PARAMS)
 clf_lgb = lgb.LGBMClassifier(**cfg.LGB_PARAMS)
-estimators = [clf_lgb]
+clf_xgb = xgb.XGBClassifier(**cfg.XGB_PARAMS)
+estimators = [clf_cb]
 
 
 df_intermediate_train = np.zeros((df_raw.shape[0], len(estimators)))
@@ -129,7 +132,7 @@ for idx_skf, (idx_train, idx_val) in enumerate(skf.split(df_raw_x, df_raw_y)):
 
     for idx_model, model in enumerate(estimators):
         model_fitted = model.fit(X=df_train_x, y=df_train_y,
-                                 eval_set=(df_val_x, df_val_y))
+                                 eval_set=[(df_val_x, df_val_y)])
         
         df_intermediate_train[idx_val, idx_model] = model_fitted.predict_proba(df_val_x)[:,1]
         df_intermediate_test[:, idx_model] += model_fitted.predict_proba(df_test)[:,1] / skf.n_splits

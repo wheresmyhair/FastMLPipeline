@@ -23,14 +23,14 @@ LGB_PARAMS = {
 XGB_PARAMS = {
     'random_state': RANDOM_STATE,
     'n_jobs': -1,
+    'enable_categorical': True,
     'tree_method': 'hist',
     
-    'num_class': 10,
+    'objective': 'binary:logistic',
     'max_depth': 7,
     'learning_rate': 0.1,
     'n_estimators': 2000,
     'early_stopping_rounds': 100,
-    'objective': 'multi:softmax',
     'subsample': 0.8,
     'colsample_bytree': 0.8,
     'alpha': 0.1, # L1 regularization
